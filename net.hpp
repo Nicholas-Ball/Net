@@ -1,7 +1,15 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <thread>
+#include <chrono>
 
+
+//checks if file exits
+inline bool Exists (const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
 
 class net{
     private:
@@ -11,63 +19,103 @@ class net{
         //status code
         std::string Code;
     public:
+        //constructor
+        net()
+        {
+          srand(time(NULL));
+        }
+
         //Get request
         void Get(std::string url)
         {
-            //get url
-            const std::string command = "curl -G -s -o temp.tmp -w \"%{http_code}\n\" "+url+" > temp2.tmp";
-            system(command.c_str());
+          int r1 = (int)(rand() % 9999999999);
+          int r2 = (int)(rand() % 9999999999);
 
-            std::ifstream file("temp.tmp");
-            std::ifstream status("temp2.tmp");
+          std::string f1 = std::to_string(r1) + ".tmp";
+          std::string f2 = std::to_string(r2) + ".tmp";
+          srand(r2);
 
-            //get status code
-            getline(status,this->Code);
+          //get url
+          const std::string command = "curl -m 2 -X GET -s -o "+f1+" -w \"%{http_code}\n\" \""+url+"\" > "+f2;
+          system(command.c_str());
 
-            this->Data = "";
-            std::string line;
+          //ensure data is writen to files before continuing
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-            //add response to data var
-            while(getline(file,line))
-            {
-                this->Data += line;
-            }
+          std::ifstream file(f1);
+          std::ifstream status(f2);
+            
+          //get status code
+          getline(status,this->Code);
+          status.close();
 
-            //close files and delete them
-            file.close();
-            status.close();
-            remove("temp.tmp");
-            remove("temp2.tmp");
+          this->Data = "";
+          std::string line;
+
+          //add response to data var
+          while(getline(file,line))
+          {
+            this->Data += line;
+          }
+
+          if(this->Data == "")
+          {
+            //ensure data is writen to files before continuing
+            std::this_thread::sleep_for(std::chrono::milliseconds(131));
+            Get(url);
+          }
+
+          //close files and delete them
+          file.close();
+          remove(f1.c_str());
+          remove(f2.c_str());
         }
 
         //Post request
         void Post(std::string url, std::string data)
         {
-            //Post url
-            const std::string command = "curl -d "+data+" -s -o temp.tmp -w \"%{http_code}\n\" "+url+" > temp2.tmp";
-            system(command.c_str());
+            
+          int r1 = (int)(rand() % 9999999999);
+          int r2 = (int)(rand() % 9999999999);
 
-            std::ifstream file("temp.tmp");
-            std::ifstream status("temp2.tmp");
+          std::string f1 = std::to_string(r1) + ".tmp";
+          std::string f2 = std::to_string(r2) + ".tmp";
+          srand(r2);
 
-            //get status code
-            getline(status,this->Code);
+          //Post url
+          const std::string command = "curl -X POST -d "+data+" -s -o "+f1+" -w \"%{http_code}\n\" \""+url+"\" > "+f2;
+          system(command.c_str());
 
-            this->Data = "";
-            std::string line;
+          //ensure data is writen to files before continuing
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-            //add response to data var
-            while(getline(file,line))
-            {
-                this->Data += line;
-            }
+          std::ifstream file(f1);
+          std::ifstream status(f2);
+            
+          //get status code
+          getline(status,this->Code);
+          status.close();
 
-            //close files and delete them
-            file.close();
-            status.close();
-            remove("temp.tmp");
-            remove("temp2.tmp");
+          this->Data = "";
+          std::string line;
 
+          //add response to data var
+          while(getline(file,line))
+          {
+            this->Data += line;
+          }
+
+          if(this->Data == "")
+          {
+            //ensure data is writen to files before continuing
+            std::this_thread::sleep_for(std::chrono::milliseconds(131));
+            Get(url);
+          }
+
+          //close files and delete them
+          file.close();
+          remove(f1.c_str());
+          remove(f2.c_str());
         }
         
         //Response accsessor
