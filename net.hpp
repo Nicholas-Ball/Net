@@ -3,6 +3,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <sys/stat.h>
 
 
 //checks if file exits
