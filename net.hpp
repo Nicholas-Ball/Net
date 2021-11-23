@@ -20,8 +20,7 @@ inline bool Exists (const std::string& name) {
 void run(const char* command)
 {
     #ifdef __linux__
-        auto p = fork();
-        p.exec(command);
+				system(command);
     #elif _WIN32
         WinExec(command,SW_HIDE);
     #else
