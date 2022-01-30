@@ -17,24 +17,14 @@ inline bool Exists (const std::string& name) {
 }
 
 //runs command without popup cross platform
-std::string run(const char* command)
-{   
-   char buffer[128];
-   std::string result = "";
-
-   // Open pipe to file
-   FILE* pipe = popen(command, "r");
-
-   // read till end of process:
-   while (!feof(pipe)) {
-
-      // use buffer to read and add to result
-      if (fgets(buffer, 128, pipe) != NULL)
-         result += buffer;
-   }
-
-  pclose(pipe);
-  return result;
+void run(const char* command)
+{
+    #ifdef __linux__
+				system(command);
+    #elif _WIN32
+        WinExec(command,SW_HIDE);
+    #else
+    #endif
 }
 
 class net{
@@ -54,17 +44,27 @@ class net{
         //Get request
         void Get(std::string url,int delay = 0)
         {
-          //make a temp file for response
           int r1 = (int)(rand() % 9999999999);
+          int r2 = (int)(rand() % 9999999999);
+
           std::string f1 = std::to_string(r1) + ".tmp";
-          srand(r1);
+          std::string f2 = std::to_string(r2) + ".tmp";
+          srand(r2);
 
-          //get url and set status code
-          const std::string command = ("curl -m 30 -X GET -s -o "+f1+" -w \"%{http_code}\" \""+url+"\"");
-          this->Code = run(command.c_str());
+          //get url
+          const std::string command = ("curl -m 2 -X GET -s -o "+f1+" -w \"%{http_code}\" \""+url+"\" > "+f2);
+          run(command.c_str());
 
-          //Read response
+          //ensure data is writen to files before continuing
+          std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
           std::ifstream file(f1);
+          std::ifstream status(f2);
+
+          //get status code
+          getline(status,this->Code);
+          status.close();
+
           this->Data = "";
           std::string line;
 
@@ -74,25 +74,44 @@ class net{
             this->Data += line;
           }
 
-          //close file and delete it
+          if(this->Data == "")
+          {
+            //ensure data is writen to files before continuing
+            std::this_thread::sleep_for(std::chrono::milliseconds(131));
+            Get(url,delay = 500);
+          }
+
+          //close files and delete them
           file.close();
           remove(f1.c_str());
+          remove(f2.c_str());
         }
 
         //Post request
         void Post(std::string url, std::string data,int delay = 0)
         {
-          //make a temp file for response
+
           int r1 = (int)(rand() % 9999999999);
+          int r2 = (int)(rand() % 9999999999);
+
           std::string f1 = std::to_string(r1) + ".tmp";
-          srand(r1);
+          std::string f2 = std::to_string(r2) + ".tmp";
+          srand(r2);
 
-          //post to url and set status code
-          const std::string command = ("curl -X POST -d "+data+" -s -o "+f1+" -w \"%{http_code}\" \""+url+"\"");
-          this->Code = run(command.c_str());
+          //Post url
+          const std::string command = ("curl -X POST -d "+data+" -s -o "+f1+" -w \"%{http_code}\" \""+url+"\" > "+f2);
+          run(command.c_str());
 
-          //Read response
+          //ensure data is writen to files before continuing
+          std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
           std::ifstream file(f1);
+          std::ifstream status(f2);
+
+          //get status code
+          getline(status,this->Code);
+          status.close();
+
           this->Data = "";
           std::string line;
 
@@ -102,9 +121,17 @@ class net{
             this->Data += line;
           }
 
-          //close file and delete it
+          if(this->Data == "")
+          {
+            //ensure data is writen to files before continuing
+            std::this_thread::sleep_for(std::chrono::milliseconds(131));
+            Post(url,data,delay = 500);
+          }
+
+          //close files and delete them
           file.close();
           remove(f1.c_str());
+          remove(f2.c_str());
         }
 
         //Response accsessor
